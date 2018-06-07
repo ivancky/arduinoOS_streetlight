@@ -44,7 +44,7 @@ float calcVoltage = 0;
 float dustDensity = 0;
 bool dust_indicator = false;
 bool status = false;
-bool automaticMode = false;
+bool automaticMistMode = false;
 int mistState = 0;
 unsigned long previousMillis2 = automatic_interval;
 float previous_brightness = 0;
@@ -98,39 +98,39 @@ void loop(){
   CalculateDust();
   DisplayInfo_Dust();
   Read_Buttons();
-  // Brightness_Automatic();
+  // Streetlight_Manual();
   // Streetlight();
 }
 
-void ReceiveHeartData(){
-  while (BlueBee.available() > 0) {
-    previousMillis = currentMillis;
-    heartRate = BlueBee.read(); // read the incoming byte:
-    BlueBee.print("Heart-rate: ");
-    BlueBee.println(heartRate);
-    total = total - heartRateIndex[readIndex]; // subtract the last reading:
-    heartRateIndex[readIndex] = heartRate; // read from ReceiveBluetoothData()
-    total = total + heartRateIndex[readIndex]; // add the reading to the total:
-    readIndex = readIndex + 1; // advance to the next position in the array:
-    if (readIndex >= numReadings) {   // if we're at the end of the array...
-    averageHeartRate = total / numReadings;   // calculate the average:
-    BlueBee.print("Average heart-rate: ");
-    BlueBee.println(averageHeartRate);
-    BlueBee.println("*****************************");
-    readIndex = 0;     // ...wrap around to the beginning:
-    }
-  delay(1);        // delay in between reads for stability
-  break;
-  }
-  // heart rate range from 50 ---> 135
-  if(averageHeartRate < 60){averageHeartRate = 60;}
-  if(averageHeartRate > 100){averageHeartRate = 100;}
-  j = (averageHeartRate - 60) * 6;
-  k = (100 - averageHeartRate) * 6;
-  analogWrite(warmLED, j);
-  analogWrite(coolLED, k);
-  delay(1);
-}
+// void ReceiveHeartData(){
+//   while (BlueBee.available() > 0) {
+//     previousMillis = currentMillis;
+//     heartRate = BlueBee.read(); // read the incoming byte:
+//     BlueBee.print("Heart-rate: ");
+//     BlueBee.println(heartRate);
+//     total = total - heartRateIndex[readIndex]; // subtract the last reading:
+//     heartRateIndex[readIndex] = heartRate; // read from ReceiveBluetoothData()
+//     total = total + heartRateIndex[readIndex]; // add the reading to the total:
+//     readIndex = readIndex + 1; // advance to the next position in the array:
+//     if (readIndex >= numReadings) {   // if we're at the end of the array...
+//     averageHeartRate = total / numReadings;   // calculate the average:
+//     BlueBee.print("Average heart-rate: ");
+//     BlueBee.println(averageHeartRate);
+//     BlueBee.println("*****************************");
+//     readIndex = 0;     // ...wrap around to the beginning:
+//     }
+//   delay(1);        // delay in between reads for stability
+//   break;
+//   }
+//   // heart rate range from 50 ---> 135
+//   if(averageHeartRate < 60){averageHeartRate = 60;}
+//   if(averageHeartRate > 100){averageHeartRate = 100;}
+//   j = (averageHeartRate - 60) * 6;
+//   k = (100 - averageHeartRate) * 6;
+//   analogWrite(warmLED, j);
+//   analogWrite(coolLED, k);
+//   delay(1);
+// }
 
 void CalculateDust(){
   digitalWrite(ledPower, LOW);
@@ -164,22 +164,22 @@ void DisplayInfo_Dust(){
   // Serial.println(dustDensity);
 }
 
-void DisplayInfo_Screen(){
-  u8g2.firstPage(); // display on OLED
-  do {
-    if(averageHeartRate < 100){ // 3 numbers or more
-      u8g2.setFont(u8g2_font_logisoso78_tn);
-      u8g2.setCursor(0, 87);
-    }
-    else{ // 2 numbers or less
-      u8g2.setFont(u8g2_font_logisoso50_tn);
-      u8g2.setCursor(0, 73);
-    }
-    u8g2.setFontDirection(0); // top to bottom
-    u8g2.print(averageHeartRate);
-  } while ( u8g2.nextPage() );
-  delay(1);
-}
+// void DisplayInfo_Screen(){
+//   u8g2.firstPage(); // display on OLED
+//   do {
+//     if(averageHeartRate < 100){ // 3 numbers or more
+//       u8g2.setFont(u8g2_font_logisoso78_tn);
+//       u8g2.setCursor(0, 87);
+//     }
+//     else{ // 2 numbers or less
+//       u8g2.setFont(u8g2_font_logisoso50_tn);
+//       u8g2.setCursor(0, 73);
+//     }
+//     u8g2.setFontDirection(0); // top to bottom
+//     u8g2.print(averageHeartRate);
+//   } while ( u8g2.nextPage() );
+//   delay(1);
+// }
 
 // void Draw_Screensaver(){
 //   // u8g2.clearDisplay();
@@ -211,61 +211,79 @@ void Read_Buttons(){
   btnMist = digitalRead(button2);
   btnFan = digitalRead(button3);
 
-  // if (btnAutomatic == LOW && automaticMode == false){ // automatic mode
-  if (btnMist == HIGH && btnFan == HIGH && automaticMode == false) { //
+  if(btnAutomatic == LOW && automaticMistMode == false){
+    automaticMistMode = true;
     Fan_Off();
     Mist_Off();
-    mistState = 0;
     previousMillis2 = millis() - automatic_interval;
-    automaticMode = true;
+    mistState = 0;
   }
+  if(btnAutomatic == HIGH && automaticMistMode == true){
+    automaticMistMode = false;
+    Fan_Off();
+    Mist_Off();
+    previousMillis2 = millis() - automatic_interval;
+    mistState = 0;
+  }
+  // // if (btnAutomatic == LOW && automaticMistMode == false){ // automatic mode
 
-  if (automaticMode == true && btnAutomatic == HIGH){ //  autobrightness
-    Brightness_Automatic();
+  // if (btnMist == HIGH && btnFan == HIGH && automaticMistMode == false) { //
+  //   Fan_Off();
+  //   Mist_Off();
+  //   mistState = 0;
+  //   previousMillis2 = millis() - automatic_interval;
+  //   automaticMistMode = true;
+  // }
+
+  if (automaticMistMode == false){ //  autobrightness
+    Streetlight_Manual();
   }
-  if (automaticMode == true && btnAutomatic == LOW){ //  auto mist
+  if (automaticMistMode == true){ //  auto mist
     Streetlight_Automatic();
   }
-
-  if (btnMist == LOW || btnFan == LOW && automaticMode == true) { // manual mode
-    Fan_Off();
-    Mist_Off();
-    automaticMode = false;
-  }
-  if(automaticMode == false){
-    Streetlight_Manual();
-    if (btnMist == LOW){
-      Mist_On();
-    } else { Mist_Off(); }
-    if (btnFan == LOW){
-      Fan_On();
-    } else { Fan_Off(); }
-  }
+  //
+  // if (btnMist == LOW || btnFan == LOW && automaticMistMode == true) { // manual mode
+  //   Fan_Off();
+  //   Mist_Off();
+  //   automaticMistMode = false;
+  // }
+  // // if(automaticMistMode == false){
+  // //   Streetlight_AmbientMode();
+  // //   if (btnMist == LOW){
+  // //     Mist_On();
+  // //   } else { Mist_Off(); }
+  // //   if (btnFan == LOW){
+  // //     Fan_On();
+  // //   } else { Fan_Off(); }
+  // // }
 }
 
-void Streetlight_Manual(){
-  if (dust_indicator == true && status == false){
-    Brighten(coolLED, 0, 255, 5);
-    // analogWrite(warmLED, 0);
-    // Dim(warmLED, 150, 50, 5);
-  }
-  if (dust_indicator == false && status == true){
-    Dim(coolLED, 255, 0, 5);
-    // Brighten(warmLED, 0, 100, 5);
-    // Brighten(warmLED, 50, 150, 5);
-  }
-}
+//
+// void Streetlight_AmbientMode(){
+//   if (dust_indicator == true && status == false){
+//     Brighten(coolLED, 0, 255, 5);
+//     // analogWrite(warmLED, 0);
+//     // Dim(warmLED, 150, 50, 5);
+//   }
+//   if (dust_indicator == false && status == true){
+//     Dim(coolLED, 255, 0, 5);
+//     // Brighten(warmLED, 0, 100, 5);
+//     // Brighten(warmLED, 50, 150, 5);
+//   }
+// }
 
 void Streetlight_Automatic(){
   if (dust_indicator == true && status == false){
-    Brighten(coolLED, 0, 255, 5);
-    // analogWrite(warmLED, 0);
-    // Dim(warmLED, 150, 50, 5);
+    // Brighten(coolLED, 0, 255, 7);
+    // Dim(warmLED, 150, 0, 7);
+    FadeInOut(coolLED, warmLED, 0, 255, 10);
+    status = true;
   }
   if (dust_indicator == false && status == true){
-    Dim(coolLED, 255, 0, 5);
-    // Brighten(warmLED, 0, 100, 5);
-    // Brighten(warmLED, 50, 150, 5);
+    // Brighten(warmLED, 0, 150, 7);
+    // Dim(coolLED, 255, 0, 7);
+    FadeInOut(warmLED, coolLED, 0, 255, 10);
+    status = false;
   }
   unsigned long currentMillis2 = millis();
   if (currentMillis2 - previousMillis2 >= automatic_interval) {
@@ -283,6 +301,16 @@ void Streetlight_Automatic(){
       mistState = 0;
       Fan_On();
     }
+  }
+}
+
+void FadeInOut(int _color1, int _color2, int _z, int _max, int _speed){
+  for(_z; _z <= _max; _z++){
+    if(_z < 0){_z = 0;}
+    if(_z > 255){_z = 255;}
+    analogWrite(_color1, _z);
+    analogWrite(_color2, _max - _z);
+    delay(_speed);
   }
 }
 
@@ -306,7 +334,7 @@ bool Dim(int _color, int _z, int _min, int _speed){ // LED string, start, end, s
   return status = false;
 }
 
-void Brightness_Automatic(){
+void Streetlight_Manual(){
   mistState = 0;
   previousMillis2 = millis() - automatic_interval;
   Mist_Off();
