@@ -28,17 +28,19 @@ int previous_brightness = 0;
 int brightness = 0;
 
 // everything else
-int ALSPin = A4;
-int fanPin = 4;
-int button1 = 12;
+int ALSPin = A3;
+int fanPin = 13;
+int button1 = 2;
 int button2 = 7;
-int button3 = 11;
-int mist = 3;
-int warmLED_1 = 6, coolLED_1 = 5;
-int btnAutomatic = 0, btnFan = 0, btnMist = 0;
+int button3 = 10;
+// int button4 = A2;
+int button5 = 12;
+int mist = 4;
+int warmLED_1 = 6, coolLED_1 = 5; // OSLON
+int warmLED_2 = 11, coolLED_2 = 3; // P8
+int btnAutomatic = 0, btnFan = 0, btnMist = 0, btnLED = 0;
 int brightness_multiplier = 5; // base brightness is level 5. Min = 1, max = 10
 int warmLED = 0, coolLED = 0;
-int btnLED = 0;
 
 void setup() {
   // BlueBee.begin(9600); // set baudrate according to BlueBee 4.0 baudrate
@@ -47,10 +49,14 @@ void setup() {
   pinMode(fanPin, OUTPUT);
   pinMode(warmLED_1, OUTPUT);
   pinMode(coolLED_1, OUTPUT);
+  pinMode(warmLED_2, OUTPUT);
+  pinMode(coolLED_2, OUTPUT);
   pinMode(mist, OUTPUT);
   pinMode(button1, INPUT_PULLUP);
   pinMode(button2, INPUT_PULLUP);
   pinMode(button3, INPUT_PULLUP);
+  // pinMode(button4, INPUT_PULLUP);
+  pinMode(button5, INPUT_PULLUP);
   pinMode(ALSPin, INPUT);
   // Serial.begin(9600);
   previous_brightness = 25 * brightness_multiplier;
@@ -70,15 +76,19 @@ void loop(){
 }
 
 void selectLEDs(){
-  btnLED = digitalRead(button3);
-  if(btnLED == LOW){
+  btnLED = digitalRead(button5);
+  if(btnLED == LOW){ // P8
     analogWrite(warmLED_1, 0);
-    delay(10);
-    warmLED = coolLED_1;
-  }else{
     analogWrite(coolLED_1, 0);
     delay(10);
+    warmLED = warmLED_2;
+    coolLED = coolLED_2;
+  }else{ // OSLON
+    analogWrite(warmLED_2, 0);
+    analogWrite(coolLED_2, 0);
+    delay(10);
     warmLED = warmLED_1;
+    coolLED = coolLED_1;
   }
 }
 void selectMode(){
@@ -106,7 +116,7 @@ void selectMode(){
 }
 void Streetlight_Manual(){
   btnMist = digitalRead(button2);
-  btnFan = HIGH;
+  btnFan = digitalRead(button3);
   adjustLight_Fog();
   if (btnMist == LOW){
     Mist_On();
@@ -163,13 +173,13 @@ int readAmbientBrightness(){
 void adjustBrightness_Ambient(){
   if(dust_indicator_flag == true){
     while (brightness < previous_brightness){
-      Dim (warmLED, previous_brightness, brightness, 10);
+      Dim (coolLED, previous_brightness, brightness, 10);
       if(brightened_flag == false){ // loop finished
         break;
       }
     }
     while (brightness > previous_brightness){
-      Brighten(warmLED, previous_brightness, brightness, 10);
+      Brighten(coolLED, previous_brightness, brightness, 10);
       if(brightened_flag == true){ // loop finished
         break;
       }
@@ -194,13 +204,11 @@ void adjustBrightness_Ambient(){
 }
 void adjustLight_Fog(){
   if (dust_indicator_flag == true && faded_flag == false){
-    // FadeInOut(coolLED_1, warmLED_1, 0, brightness, 10);
-    Brighten(warmLED, 0, 255, 10);
+    FadeInOut(coolLED, warmLED, 0, brightness, 10);
     faded_flag = true;
   }
   if (dust_indicator_flag == false && faded_flag == true){
-    // FadeInOut(warmLED_1, coolLED_1, 0, brightness, 10);
-    Dim(warmLED, 255, 0, 10);
+    FadeInOut(warmLED, coolLED, 0, brightness, 10);
     faded_flag = false;
   }
 }
